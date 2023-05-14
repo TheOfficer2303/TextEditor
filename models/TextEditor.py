@@ -27,28 +27,19 @@ class TextEditor(CursorObserver):
 
   def show_text(self):
     text_opts = {
-      "font": ("Courier New", 16)
+      "font": ("Courier New", 24)
     }
-
-    options = {
-      "text": self.model.lines,
-      "anchor": "w",
-      "font": ("Courier New", 16)
-    }
-    
-    base_widget = Widget(self.window, "label", options)
 
     text_widget = Widget(self.window, "text", text_opts)
-    text_widget.tk.call(text_widget._w, 'insert', "0.0", "ABCD8")
+    text_widget.tk.call(text_widget._w, 'insert', "0.0", self.model.lines)
 
-    count = text_widget.tk.call(text_widget._w, 'count', '-chars', '1.0', 'end')
-    print(count)
+    print(text_widget.tk.call(text_widget._w, 'count', '-chars', '1.0', '1.18'))
 
     text_widget.configure(state='disabled')
 
     text_widget.place(x=0, y=0)
+    self.cursor.lift()
 
-    base_widget.place(x=0, y=0)
 
   def _show_cursor(self):
     options = {
