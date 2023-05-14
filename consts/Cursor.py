@@ -1,0 +1,4 @@
+HEIGHT = 17
+WIDTH = 1
+X_JUMP = 10.5
+COLOR = "red"
