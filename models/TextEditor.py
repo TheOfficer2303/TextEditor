@@ -40,9 +40,7 @@ class TextEditor(CursorObserver, TextObserver):
     }
 
     text_widget = Widget(self.window, "text", text_opts)
-    text_widget.tk.call(text_widget._w, 'insert', "0.0", self.model.lines)
-
-    print(text_widget.tk.call(text_widget._w, 'count', '-chars', '1.0', '1.18'))
+    self._show_all_lines(text_widget)
 
     text_widget.configure(state='disabled')
 
@@ -50,6 +48,11 @@ class TextEditor(CursorObserver, TextObserver):
     self.cursor.lift()
 
     self.text = text_widget
+
+
+  def _show_all_lines(self, text_widget: Widget):
+    for index, line in enumerate(self.model.lines):
+      text_widget.tk.call(text_widget._w, 'insert', f"{index + 1}.0", line + '\n')
 
   def _show_cursor(self):
     options = {
@@ -70,17 +73,23 @@ class TextEditor(CursorObserver, TextObserver):
 
   def update_text(self):
     self.text.configure(state='normal')
-    self.text.tk.call(self.text._w, 'replace', "0.0", "end", self.model.lines)
-
+    self._update_all_lines()
 
     if self.model.selection_range.is_existing():
       start = self._create_tag_start_location()
       end = self._create_tag_end_location()
 
+      print("start", start)
+      print("end", end)
       self.text.tk.call(self.text._w, 'tag', 'add', 'bg', start, end)
       self.text.tk.call(self.text._w, 'tag', 'configure', 'bg', '-background', 'orange')
 
     self.text.configure(state='disabled')
+
+
+  def _update_all_lines(self):
+    for index, line in enumerate(self.model.lines):
+      self.text.tk.call(self.text._w, 'replace', f"{index + 1}.0", f"{index + 1}.end",  line)
 
 
   def _create_tag_start_location(self):

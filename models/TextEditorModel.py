@@ -49,8 +49,7 @@ class TextEditorModel(Subject):
       self.cursor_location.x = Cursor.X_ORIGIN
 
   def _move_cursor_y(self, direction: str, times=1):
-    move = Cursor.X_JUMP * times
-
+    move = Cursor.Y_JUMP * times
     if direction == "forwards":
       self.cursor_location.y += move
     elif self.cursor_location.y - move > 0:
@@ -75,14 +74,16 @@ class TextEditorModel(Subject):
 
   # TEXT METHODS
   def delete_before(self, event=None):
+    char_row = int(self.cursor_location.y / Cursor.Y_JUMP)
+    char_position = int(self.cursor_location.x / Cursor.X_JUMP)
+
+    if self.cursor_location.x == Cursor.X_ORIGIN:
+      self.move_cursor_right(times=len(self.lines[char_row - 1]) + 1)
+      self.move_cursor_up()
+
     if self.selection_range.is_existing():
       self.delete_selection()
       return
-
-    if self.cursor_location.x == Cursor.X_ORIGIN:
-      return
-    char_row = int(self.cursor_location.y / Cursor.Y_JUMP)
-    char_position = int(self.cursor_location.x / Cursor.X_JUMP)
 
     self.lines[char_row] = self.lines[char_row][:char_position - 1] + self.lines[char_row][char_position:]
 
@@ -104,7 +105,9 @@ class TextEditorModel(Subject):
 
 
   def delete_selection(self):
-    for y in range(self.selection_range.end.y + 1 - self.selection_range.start.y):
+    for y in range(self.selection_range.end.y + len(self.lines) - self.selection_range.start.y):
+      if y != self.selection_range.end.y:
+        continue
       self.lines[y] = self.lines[y][:self.selection_range.start.x] + self.lines[y][self.selection_range.end.x:]
 
     self.move_cursor_left(times=self.selection_range.x_range())
@@ -114,12 +117,16 @@ class TextEditorModel(Subject):
 
   def update_selection_range(self, event):
     cursor_normalized = self._cursor_location_normalized()
+    print('normalized', cursor_normalized)
     if event.keysym == 'Right':
       if self.selection_range.is_existing():
         self.selection_range.end.x += 1
       else:
         self.selection_range.start.x = cursor_normalized.x
+        self.selection_range.start.y = cursor_normalized.y
+
         self.selection_range.end.x = self.selection_range.start.x + 1
+        self.selection_range.end.y = cursor_normalized.y
 
       self.move_cursor_right()
 

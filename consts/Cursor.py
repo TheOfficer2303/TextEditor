@@ -3,5 +3,5 @@ Y_ORIGIN = 5
 HEIGHT = 24
 WIDTH = 2
 X_JUMP = 14.5
-Y_JUMP = 20
+Y_JUMP = 28
 COLOR = "red"
