@@ -2,15 +2,16 @@ import tkinter as tk
 
 root = tk.Tk()
 
-text = tk.Text(root, height=5, width=30)
-text.pack()
+text_widget = tk.Text(root)
+text_widget.pack()
 
 # Insert some text into the widget
-text.insert("1.0", "Hello, World!\nHow are you today?")
+text_widget.insert(tk.END, "This is some text")
 
-# Get the coordinates of the first 'o' character
-char_coords = text.bbox("1.5")
+# Add a tag to the text
+text_widget.tag_add("bg", "1.0", "1.5")
 
-print("The coordinates of the first 'o' character are:", char_coords)
+# Configure the tag with a background color
+text_widget.tag_configure("bg", background="orange")
 
 root.mainloop()

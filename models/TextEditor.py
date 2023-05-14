@@ -3,10 +3,12 @@ from models.Location import Location
 
 from models.TextEditorModel import TextEditorModel
 import consts.Cursor as Cursor
+from consts.Observer import ObserverType
 
 from observers.CursorObserver import CursorObserver
+from observers.TextObserver import TextObserver
 
-class TextEditor(CursorObserver):
+class TextEditor(CursorObserver, TextObserver):
   def __init__(self, window: Tk, model: TextEditorModel) -> None:
     self._init_model(model)
     self._init_window(window)
@@ -20,10 +22,17 @@ class TextEditor(CursorObserver):
     self.window.bind('<Up>', self.model.move_cursor_up)
     self.window.bind('<Down>', self.model.move_cursor_down)
 
+    self.window.bind('<BackSpace>', self.model.delete_before)
+    self.window.bind('<Delete>', self.model.delete_after)
+
+    self.window.bind('<Shift-Right>', self.model.update_selection_range)
+    self.window.bind('<Shift-Left>', self.model.update_selection_range)
+
 
   def _init_model(self, model: TextEditorModel):
     self.model = model
-    model.attach(self)
+    model.attach(self, ObserverType.CURSOR)
+    model.attach(self, ObserverType.TEXT)
 
   def show_text(self):
     text_opts = {
@@ -40,6 +49,7 @@ class TextEditor(CursorObserver):
     text_widget.place(x=0, y=0)
     self.cursor.lift()
 
+    self.text = text_widget
 
   def _show_cursor(self):
     options = {
@@ -57,3 +67,30 @@ class TextEditor(CursorObserver):
   def update_cursor_location(self, location: Location):
     self.cursor.place(x=location.x, y=location.y)
     self.cursor.lift()
+
+  def update_text(self):
+    self.text.configure(state='normal')
+    self.text.tk.call(self.text._w, 'replace', "0.0", "end", self.model.lines)
+
+
+    if self.model.selection_range.is_existing():
+      start = self._create_tag_start_location()
+      end = self._create_tag_end_location()
+
+      self.text.tk.call(self.text._w, 'tag', 'add', 'bg', start, end)
+      self.text.tk.call(self.text._w, 'tag', 'configure', 'bg', '-background', 'orange')
+
+    self.text.configure(state='disabled')
+
+
+  def _create_tag_start_location(self):
+    row = self.model.selection_range.start.y + 1
+    column = self.model.selection_range.start.x
+
+    return f"{row}.{column}"
+
+  def _create_tag_end_location(self):
+    row = self.model.selection_range.end.y + 1
+    column = self.model.selection_range.end.x
+
+    return f"{row}.{column}"

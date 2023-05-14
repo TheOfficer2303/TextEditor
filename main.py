@@ -3,7 +3,9 @@ from models.TextEditorModel import TextEditorModel
 from models.TextEditor import TextEditor
 
 new_window = tk.Tk()
-model = TextEditorModel("ABC\nDASDSA")
+new_window.geometry("1000x500")
+
+model = TextEditorModel("123456789")
 editor = TextEditor(new_window, model)
 editor.show_text()
 
