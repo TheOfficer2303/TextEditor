@@ -84,26 +84,33 @@ class TextEditorModel(Subject):
 
 
   # TEXT METHODS
-  def insert(self, event):
-    if event.keysym == "Return":
-      self.break_lines()
-      self.notify(ObserverType.TEXT)
-      return
+  def insert(self, event, char=""):
+    if event is not None:
+      if event.keysym == "Return":
+        self.break_lines()
+        self.notify(ObserverType.TEXT)
+        return
 
-    if event.char == "" or not event.char.isalpha:
-      return
+      if event.char == "" or not event.char.isalpha:
+        return
 
-    text = event.char
+    char_to_insert = char if len(char) > 0 else event.char
     cursor_normalized = self._cursor_location_normalized()
 
     char_row = cursor_normalized.y
     char_position = cursor_normalized.x
 
     old_string = self.lines[char_row]
-    self.lines[char_row] = old_string[:char_position] + text + old_string[char_position:]
+    self.lines[char_row] = old_string[:char_position] + char_to_insert + old_string[char_position:]
 
-    self.move_cursor_right(times=len(text))
+    self.move_cursor_right(times=len(char_to_insert))
     self.notify(ObserverType.TEXT)
+
+
+  def insert_text(self, text: str):
+    for char in text:
+      self.insert(None, char)
+
 
   def break_lines(self):
     cursor_normalized = self._cursor_location_normalized()
@@ -162,8 +169,7 @@ class TextEditorModel(Subject):
       self.lines[y] = self.lines[y][:self.selection_range.start.x] + self.lines[y][self.selection_range.end.x:]
 
     self.move_cursor_left(times=self.selection_range.x_range())
-    self.selection_range.reset()
-    self.notify(ObserverType.TEXT)
+    self.unselect()
 
 
   def update_selection_range(self, event):
@@ -213,3 +219,17 @@ class TextEditorModel(Subject):
 
   def _cursor_location_normalized(self):
     return Location(int(self.cursor_location.x / Cursor.X_JUMP), int(self.cursor_location.y / Cursor.Y_JUMP))
+
+
+  def get_text_in_selection(self):
+    if self.selection_range.is_existing():
+      row = self.selection_range.start.y
+      first_char_position = self.selection_range.start.x
+      last_char_position = self.selection_range.end.x
+
+      return self.lines[row][first_char_position:last_char_position]
+
+
+  def unselect(self):
+    self.selection_range.reset()
+    self.notify(ObserverType.TEXT)

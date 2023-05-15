@@ -1,7 +1,8 @@
-from tkinter import Tk, Widget, INSERT
-from models.Location import Location
+from tkinter import Tk, Widget
 
 from models.TextEditorModel import TextEditorModel
+from models.ClipboardStack import ClipboardStack
+
 import consts.Cursor as Cursor
 from consts.Observer import ObserverType
 
@@ -13,15 +14,21 @@ class TextEditor(CursorObserver, TextObserver):
     self._init_model(model)
     self._init_window(window)
     self.cursor = self._show_cursor()
-
+    self.clipboard = ClipboardStack("texts")
 
   def _init_window(self, window: Tk):
     self.window = window
+    self._bind_cursor_keys()
+    self._bind_text_editing_keys()
+    self._bind_clipboard_keys()
+
+  def _bind_cursor_keys(self):
     self.window.bind('<Right>', self.model.move_cursor_right)
     self.window.bind('<Left>', self.model.move_cursor_left)
     self.window.bind('<Up>', self.model.move_cursor_up)
     self.window.bind('<Down>', self.model.move_cursor_down)
 
+  def _bind_text_editing_keys(self):
     self.window.bind('<BackSpace>', self.model.delete_before)
     self.window.bind('<Delete>', self.model.delete_after)
 
@@ -30,10 +37,18 @@ class TextEditor(CursorObserver, TextObserver):
 
     self.window.bind('<KeyPress>', self.model.insert)
 
+  def _bind_clipboard_keys(self):
+    self.window.bind('<Control-c>', self._copy_to_clipboard)
+    self.window.bind('<Control-x>', self._cut_to_clipboard)
+    self.window.bind('<Control-v>', self._paste_from_clipboard)
+    self.window.bind('<Control-Shift-V>', self._paste_and_remove_from_clipboard)
+
+
   def _init_model(self, model: TextEditorModel):
     self.model = model
     model.attach(self, ObserverType.CURSOR)
     model.attach(self, ObserverType.TEXT)
+
 
   def show_text(self):
     text_opts = {
@@ -55,6 +70,7 @@ class TextEditor(CursorObserver, TextObserver):
     for index, line in enumerate(self.model.lines):
       text_widget.tk.call(text_widget._w, 'insert', f"{index + 1}.0", line + '\n')
 
+
   def _show_cursor(self):
     options = {
       "height": Cursor.HEIGHT,
@@ -68,9 +84,33 @@ class TextEditor(CursorObserver, TextObserver):
 
     return cursor
 
+
+  def _copy_to_clipboard(self, event):
+    if self.model.selection_range.is_existing():
+      text = self.model.get_text_in_selection()
+      self.clipboard.push(text)
+
+
+  def _cut_to_clipboard(self, event):
+    self._copy_to_clipboard(None)
+    self.model.delete_selection()
+
+
+  def _paste_from_clipboard(self, event):
+    text = self.clipboard.peek()
+    self.model.insert_text(text)
+    self.model.unselect()
+
+
+  def _paste_and_remove_from_clipboard(self, event):
+    print("I work")
+    self._paste_from_clipboard(None)
+    self.clipboard.pop()
+
   def update_cursor_location(self):
     self.cursor.place(x=self.model.cursor_location.x, y=self.model.cursor_location.y)
     self.cursor.lift()
+
 
   def update_text(self):
     self.text.configure(state='normal')
@@ -100,6 +140,7 @@ class TextEditor(CursorObserver, TextObserver):
     column = self.model.selection_range.start.x
 
     return f"{row}.{column}"
+
 
   def _create_tag_end_location(self):
     row = self.model.selection_range.end.y + 1

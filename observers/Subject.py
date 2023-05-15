@@ -1,8 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
 from dataclasses import dataclass, field
-
-
 
 @dataclass
 class Subject(ABC):
