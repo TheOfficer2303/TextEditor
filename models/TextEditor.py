@@ -28,6 +28,7 @@ class TextEditor(CursorObserver, TextObserver):
     self.window.bind('<Shift-Right>', self.model.update_selection_range)
     self.window.bind('<Shift-Left>', self.model.update_selection_range)
 
+    self.window.bind('<KeyPress>', self.model.insert)
 
   def _init_model(self, model: TextEditorModel):
     self.model = model
@@ -67,8 +68,8 @@ class TextEditor(CursorObserver, TextObserver):
 
     return cursor
 
-  def update_cursor_location(self, location: Location):
-    self.cursor.place(x=location.x, y=location.y)
+  def update_cursor_location(self):
+    self.cursor.place(x=self.model.cursor_location.x, y=self.model.cursor_location.y)
     self.cursor.lift()
 
   def update_text(self):
@@ -79,8 +80,6 @@ class TextEditor(CursorObserver, TextObserver):
       start = self._create_tag_start_location()
       end = self._create_tag_end_location()
 
-      print("start", start)
-      print("end", end)
       self.text.tk.call(self.text._w, 'tag', 'add', 'bg', start, end)
       self.text.tk.call(self.text._w, 'tag', 'configure', 'bg', '-background', 'orange')
 
@@ -89,7 +88,11 @@ class TextEditor(CursorObserver, TextObserver):
 
   def _update_all_lines(self):
     for index, line in enumerate(self.model.lines):
-      self.text.tk.call(self.text._w, 'replace', f"{index + 1}.0", f"{index + 1}.end",  line)
+      if self.text.tk.call(self.text._w, 'count', '-lines', '1.0', 'end') < len(self.model.lines):
+        self.text.tk.call(self.text._w, 'insert', f"{index + 1}.0", line + '\n')
+        print(self.text.tk.call(self.text._w, 'count', '-lines', '1.0', 'end'))
+      else:
+        self.text.tk.call(self.text._w, 'replace', f"{index + 1}.0", f"{index + 1}.end",  line)
 
 
   def _create_tag_start_location(self):

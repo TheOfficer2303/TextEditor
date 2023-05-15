@@ -38,6 +38,11 @@ class TextEditorModel(Subject):
     self.notify(ObserverType.CURSOR)
 
 
+  def _move_cursor_to(self, location: Location):
+    self.cursor_location = location
+    self.notify(ObserverType.CURSOR)
+
+
   def _move_cursor_x(self, direction: str, times=1):
     move = Cursor.X_JUMP * times
 
@@ -71,11 +76,55 @@ class TextEditorModel(Subject):
   def move_cursor_up(self, event=None, times=1):
     self._move_cursor("y", times=times)
 
+  def move_cursor_to_origin_x(self):
+    self._move_cursor_to(Location(0, self.cursor_location.y))
+
+  def move_cursor_to_origin_y(self):
+    self._move_cursor_to(Location(self.cursor_location.x, 0))
+
 
   # TEXT METHODS
+  def insert(self, event):
+    if event.keysym == "Return":
+      self.break_lines()
+      self.notify(ObserverType.TEXT)
+      return
+
+    if event.char == "" or not event.char.isalpha:
+      return
+
+    text = event.char
+    cursor_normalized = self._cursor_location_normalized()
+
+    char_row = cursor_normalized.y
+    char_position = cursor_normalized.x
+
+    old_string = self.lines[char_row]
+    self.lines[char_row] = old_string[:char_position] + text + old_string[char_position:]
+
+    self.move_cursor_right(times=len(text))
+    self.notify(ObserverType.TEXT)
+
+  def break_lines(self):
+    cursor_normalized = self._cursor_location_normalized()
+
+    char_row = cursor_normalized.y
+    char_position = cursor_normalized.x
+
+    chars_to_new_line = self.lines[char_row][char_position:]
+    self.lines[char_row] = self.lines[char_row][:char_position]
+    self.lines.insert(char_row + 1, chars_to_new_line)
+
+    self.move_cursor_down()
+    self.move_cursor_to_origin_x()
+
+
+  # DELETE METHODS
   def delete_before(self, event=None):
-    char_row = int(self.cursor_location.y / Cursor.Y_JUMP)
-    char_position = int(self.cursor_location.x / Cursor.X_JUMP)
+    cursor_normalized = self._cursor_location_normalized()
+
+    char_row = cursor_normalized.y
+    char_position = cursor_normalized.x
 
     if self.cursor_location.x == Cursor.X_ORIGIN:
       self.move_cursor_right(times=len(self.lines[char_row - 1]) + 1)
@@ -96,8 +145,10 @@ class TextEditorModel(Subject):
       self.delete_selection()
       return
 
-    char_row = int(self.cursor_location.y / Cursor.Y_JUMP)
-    char_position = int(self.cursor_location.x / Cursor.X_JUMP)
+    cursor_normalized = self._cursor_location_normalized()
+
+    char_row = cursor_normalized.y
+    char_position = cursor_normalized.x
 
     self.lines[char_row] = self.lines[char_row][:char_position] + self.lines[char_row][char_position + 1:]
 
@@ -117,7 +168,7 @@ class TextEditorModel(Subject):
 
   def update_selection_range(self, event):
     cursor_normalized = self._cursor_location_normalized()
-    print('normalized', cursor_normalized)
+
     if event.keysym == 'Right':
       if self.selection_range.is_existing():
         self.selection_range.end.x += 1
@@ -153,7 +204,7 @@ class TextEditorModel(Subject):
   def notify(self, obs_type: ObserverType):
     if obs_type == ObserverType.CURSOR:
       for o in self.cursor_observers:
-        o.update_cursor_location(self.cursor_location)
+        o.update_cursor_location()
 
     elif obs_type == ObserverType.TEXT:
       for o in self.text_observers:

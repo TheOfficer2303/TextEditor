@@ -6,5 +6,5 @@ from models.Location import Location
 @dataclass
 class CursorObserver(ABC):
   @abstractmethod
-  def update_cursor_location(self, location: Location):
+  def update_cursor_location(self):
     pass
