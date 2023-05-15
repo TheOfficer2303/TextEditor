@@ -8,13 +8,24 @@ from consts.Observer import ObserverType
 
 from observers.CursorObserver import CursorObserver
 from observers.TextObserver import TextObserver
+from observers.ClipboardObserver import ClipboardObserver
 
-class TextEditor(CursorObserver, TextObserver):
+from helpers.setupMenu import setup_menu
+
+class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
   def __init__(self, window: Tk, model: TextEditorModel) -> None:
+    self.clipboard = ClipboardStack("texts")
     self._init_model(model)
     self._init_window(window)
     self.cursor = self._show_cursor()
-    self.clipboard = ClipboardStack("texts")
+
+    self.cut_action_active = False
+    self.copy_action_active = False
+    self.paste_action_active = False
+    self.paste_take_action_active = False
+
+
+    setup_menu(self)
 
   def _init_window(self, window: Tk):
     self.window = window
@@ -48,6 +59,7 @@ class TextEditor(CursorObserver, TextObserver):
     self.model = model
     model.attach(self, ObserverType.CURSOR)
     model.attach(self, ObserverType.TEXT)
+    self.clipboard.attach(self)
 
 
   def show_text(self):
@@ -85,27 +97,27 @@ class TextEditor(CursorObserver, TextObserver):
     return cursor
 
 
-  def _copy_to_clipboard(self, event):
+  def _copy_to_clipboard(self, event=None):
     if self.model.selection_range.is_existing():
       text = self.model.get_text_in_selection()
       self.clipboard.push(text)
 
 
-  def _cut_to_clipboard(self, event):
+  def _cut_to_clipboard(self, event=None):
     self._copy_to_clipboard(None)
     self.model.delete_selection()
 
 
-  def _paste_from_clipboard(self, event):
+  def _paste_from_clipboard(self, event=None):
     text = self.clipboard.peek()
     self.model.insert_text(text)
     self.model.unselect()
 
 
-  def _paste_and_remove_from_clipboard(self, event):
-    print("I work")
+  def _paste_and_remove_from_clipboard(self, event=None):
     self._paste_from_clipboard(None)
     self.clipboard.pop()
+
 
   def update_cursor_location(self):
     self.cursor.place(x=self.model.cursor_location.x, y=self.model.cursor_location.y)
@@ -116,15 +128,27 @@ class TextEditor(CursorObserver, TextObserver):
     self.text.configure(state='normal')
     self._update_all_lines()
 
+    self.copy_action_active, self.cut_action_active = False, False
     if self.model.selection_range.is_existing():
+      self.copy_action_active, self.cut_action_active = True, True
+
       start = self._create_tag_start_location()
       end = self._create_tag_end_location()
 
       self.text.tk.call(self.text._w, 'tag', 'add', 'bg', start, end)
       self.text.tk.call(self.text._w, 'tag', 'configure', 'bg', '-background', 'orange')
 
+    setup_menu(self)
     self.text.configure(state='disabled')
 
+
+  def update_clipboard(self):
+    if self.clipboard.is_empty():
+      self.paste_action_active, self.paste_take_action_active = False, False
+    else:
+      self.paste_action_active, self.paste_take_action_active = True, True
+
+    setup_menu(self)
 
   def _update_all_lines(self):
     for index, line in enumerate(self.model.lines):
@@ -147,3 +171,7 @@ class TextEditor(CursorObserver, TextObserver):
     column = self.model.selection_range.end.x
 
     return f"{row}.{column}"
+
+
+  def _delete_selection(self):
+    return self.model.delete_selection()
