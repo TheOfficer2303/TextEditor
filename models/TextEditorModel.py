@@ -75,7 +75,8 @@ class TextEditorModel(Subject):
 
   # CURSOR METHODS
   def move_cursor_right(self, event=None, times=1):
-    if not self.cursor.normalized_location.x == len(self.lines[self.cursor.normalized_location.y]):
+    #TODO popravi kurac ovaj
+    if not self.cursor.normalized_location.x == len(self.lines[self.cursor.normalized_location.y]) or not self.cursor.normalized_location.x == len(self.lines[self.cursor.normalized_location.y -1]):
       self._move_cursor("x", "forwards", times=times)
 
   def move_cursor_left(self, event=None, times=1):
