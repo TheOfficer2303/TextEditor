@@ -6,6 +6,11 @@ class Cursor:
     self.location = Location(x, y)
     self.normalized_location = Location(0, 0)
 
+  def set_location(self, location: Location):
+    self.location = location
+    self.normalized_location.x = int(self.location.x / X_JUMP)
+    self.normalized_location.y = int(self.location.y / Y_JUMP)
+
   def increase_x(self, times=1):
     self.location.x += 1 * times
     self.normalized_location.x = int(self.location.x / X_JUMP)

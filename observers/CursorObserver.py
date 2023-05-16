@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from models.Cursor import Cursor
 
-from models.Location import Location
 
 @dataclass
 class CursorObserver(ABC):
   @abstractmethod
-  def update_cursor_location(self):
+  def update_cursor_location(self, cursor: Cursor):
     pass

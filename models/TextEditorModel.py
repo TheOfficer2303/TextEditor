@@ -40,7 +40,7 @@ class TextEditorModel(Subject):
 
 
   def _move_cursor_to(self, location: Location):
-    self.cursor.location = location
+    self.cursor.set_location(location)
     self.notify(ObserverType.CURSOR)
 
 
@@ -240,11 +240,11 @@ class TextEditorModel(Subject):
   def notify(self, obs_type: ObserverType):
     if obs_type == ObserverType.CURSOR:
       for o in self.cursor_observers:
-        o.update_cursor_location()
+        o.update_cursor_location(self.cursor)
 
     elif obs_type == ObserverType.TEXT:
       for o in self.text_observers:
-        o.update_text()
+        o.update_text(self.lines)
 
 
   def get_text_in_selection(self):

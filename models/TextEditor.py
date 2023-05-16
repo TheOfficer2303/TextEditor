@@ -1,7 +1,9 @@
 from tkinter import Tk, Widget
 
+from models.StatusBar import StatusBar
 from models.TextEditorModel import TextEditorModel
 from models.ClipboardStack import ClipboardStack
+from models.Cursor import Cursor as CursorModel
 
 import consts.Cursor as Cursor
 from consts.Observer import ObserverType
@@ -18,6 +20,8 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
     self.clipboard = ClipboardStack("texts")
     self._init_model(model)
     self._init_window(window)
+    self._init_status_bar()
+
     self.cursor = self._show_cursor()
 
     self.cut_action_active = False
@@ -60,8 +64,13 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
     self.model = model
     model.attach(self, ObserverType.CURSOR)
     model.attach(self, ObserverType.TEXT)
+
     self.clipboard.attach(self)
 
+  def _init_status_bar(self):
+    self.status_bar = StatusBar(self.window)
+    self.model.attach(self.status_bar, ObserverType.CURSOR)
+    self.model.attach(self.status_bar, ObserverType.TEXT)
 
   def show_text(self):
     text_opts = {
@@ -120,12 +129,12 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
     self.clipboard.pop()
 
 
-  def update_cursor_location(self):
-    self.cursor.place(x=self.model.cursor.location.x, y=self.model.cursor.location.y)
+  def update_cursor_location(self, cursor: CursorModel):
+    self.cursor.place(x=cursor.location.x, y=cursor.location.y)
     self.cursor.lift()
 
 
-  def update_text(self):
+  def update_text(self, text=None):
     self.text.configure(state='normal')
     self._update_all_lines()
 
