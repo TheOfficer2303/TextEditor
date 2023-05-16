@@ -1,4 +1,5 @@
 from tkinter import Tk, Widget
+from managers.UndoManager import UndoManager
 
 from models.StatusBar import StatusBar
 from models.TextEditorModel import TextEditorModel
@@ -22,6 +23,7 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
     self._init_window(window)
     self._init_status_bar()
 
+    self.undo_manager = UndoManager()
     self.cursor = self._show_cursor()
 
     self.cut_action_active = False
@@ -37,6 +39,7 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
     self._bind_cursor_keys()
     self._bind_text_editing_keys()
     self._bind_clipboard_keys()
+    self._bind_undo_manager_keys()
 
   def _bind_cursor_keys(self):
     self.window.bind('<Right>', self.model.move_cursor_right)
@@ -58,6 +61,10 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
     self.window.bind('<Control-x>', self._cut_to_clipboard)
     self.window.bind('<Control-v>', self._paste_from_clipboard)
     self.window.bind('<Control-Shift-V>', self._paste_and_remove_from_clipboard)
+
+  def _bind_undo_manager_keys(self):
+    self.window.bind('<Control-z>', self._undo)
+    self.window.bind('<Control-y>', self._redo)
 
 
   def _init_model(self, model: TextEditorModel):
@@ -127,6 +134,12 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
   def _paste_and_remove_from_clipboard(self, event=None):
     self._paste_from_clipboard(None)
     self.clipboard.pop()
+
+  def _undo(self, event=None):
+    self.undo_manager.undo()
+
+  def _redo(self, event=None):
+    self.undo_manager.redo()
 
 
   def update_cursor_location(self, cursor: CursorModel):

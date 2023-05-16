@@ -1,5 +1,11 @@
 from typing import List
 
+from command.delete.DeleteBefore import DeleteBeforeAction
+from command.delete.DeleteAfter import DeleteAfterAction
+from command.delete.DeleteSelection import DeleteSelectionAction
+from command.insert.Insert import InsertAction
+from managers.UndoManager import UndoManager
+
 from models.LocationRange import LocationRange
 from models.Location import Location
 from models.Cursor import Cursor
@@ -10,6 +16,7 @@ from observers.TextObserver import TextObserver
 
 from consts.Observer import ObserverType
 from consts.Cursor import X_ORIGIN, Y_ORIGIN, X_JUMP, Y_JUMP
+
 
 class TextEditorModel(Subject):
   def __init__(self, text: str):
@@ -23,6 +30,8 @@ class TextEditorModel(Subject):
 
     self.cursor_observers: List[CursorObserver] = []
     self.text_observers: List[TextObserver] = []
+
+    self.undo_manager = UndoManager()
 
 
   def _break_text(self, text: str):
@@ -96,26 +105,11 @@ class TextEditorModel(Subject):
 
   # TEXT METHODS
   def insert(self, event, char=""):
-    if event is not None:
-      if event.keysym == "Return":
-        self.break_lines()
-        self.notify(ObserverType.TEXT)
-        return
+    action = InsertAction(self, event, char)
+    error = action.execute_do()
 
-      if event.char == "" or not event.char.isalpha:
-        return
-
-    char_to_insert = char if len(char) > 0 else event.char
-    cursor_normalized = self.cursor.normalized_location
-
-    char_row = cursor_normalized.y
-    char_position = cursor_normalized.x
-
-    old_string = self.lines[char_row]
-    self.lines[char_row] = old_string[:char_position] + char_to_insert + old_string[char_position:]
-
-    self.move_cursor_right(times=len(char_to_insert))
-    self.notify(ObserverType.TEXT)
+    if not error:
+      self.undo_manager.push(action)
 
 
   def insert_text(self, text: str):
@@ -139,51 +133,26 @@ class TextEditorModel(Subject):
 
   # DELETE METHODS
   def delete_before(self, event=None):
-    cursor_normalized = self.cursor.normalized_location
+    action = DeleteBeforeAction(self)
+    error = action.execute_do()
 
-    char_row = cursor_normalized.y
-    char_position = cursor_normalized.x
-
-    if self.cursor.location.x == X_ORIGIN:
-      self.move_cursor_right(times=len(self.lines[char_row - 1]) + 1)
-      self.move_cursor_up()
-
-    if self.selection_range.is_existing():
-      self.delete_selection()
-      return
-
-    self.lines[char_row] = self.lines[char_row][:char_position - 1] + self.lines[char_row][char_position:]
-
-    self.move_cursor_left()
-    self.notify(ObserverType.TEXT)
+    if not error:
+      self.undo_manager.push(action)
 
 
   def delete_after(self, event=None):
-    if self.selection_range.is_existing():
-      self.delete_selection()
-      return
+    action = DeleteAfterAction(self)
+    error = action.execute_do()
 
-    cursor_normalized = self.cursor.normalized_location
+    if not error:
+      self.undo_manager.push(action)
 
-    char_row = cursor_normalized.y
-    char_position = cursor_normalized.x
-
-    self.lines[char_row] = self.lines[char_row][:char_position] + self.lines[char_row][char_position + 1:]
-
-    self.notify(ObserverType.TEXT)
 
 
   def delete_selection(self):
-    for y in range(self.selection_range.end.y + len(self.lines) - self.selection_range.start.y):
-      if y != self.selection_range.end.y:
-        continue
-      self.lines[y] = self.lines[y][:self.selection_range.start.x] + self.lines[y][self.selection_range.end.x:]
-
-    cursor_normalized = self.cursor.normalized_location
-
-    move_steps = self.selection_range.x_range() if cursor_normalized.x == self.selection_range.end.x else 0
-    self.move_cursor_left(times=move_steps)
-    self.unselect()
+    action = DeleteSelectionAction(self)
+    action.execute_do()
+    self.undo_manager.push(action)
 
 
   def update_selection_range(self, event):
@@ -212,14 +181,11 @@ class TextEditorModel(Subject):
         elif cursor_normalized.x == self.selection_range.end.x:
           self.selection_range.end.x -= 1
       else:
-        print("TU SAM")
         self.selection_range.start.x = cursor_normalized.x - 1
         self.selection_range.start.y = cursor_normalized.y
 
         self.selection_range.end.x = self.selection_range.start.x + 1
         self.selection_range.end.y = cursor_normalized.y
-        print("Cursor", cursor_normalized)
-        print("selection", self.selection_range)
       self.move_cursor_left()
 
     self.notify(ObserverType.TEXT)
