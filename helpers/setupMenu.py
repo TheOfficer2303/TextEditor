@@ -13,7 +13,8 @@ def setup_menu(self):
 def setup_file_menu(self):
   self.file_menu = Menu(self.menubar, tearoff=0)
   for option in FILE_MENU:
-    self.file_menu.add_command(label=option["label"])
+    command = f"_{option['command']}_file"
+    self.file_menu.add_command(label=option["label"], command=getattr(self, command))
 
   self.menubar.add_cascade(label = "File", menu = self.file_menu)
 
@@ -31,4 +32,3 @@ def setup_edit_menu(self):
 
 def setup_move_menu(self):
   self.move_menu = Menu(self.menubar, tearoff=0)
-  

@@ -11,6 +11,7 @@ from observers.TextObserver import TextObserver
 from observers.ClipboardObserver import ClipboardObserver
 
 from helpers.setupMenu import setup_menu
+from helpers.fileManager import save_file, open_file, exit_file
 
 class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
   def __init__(self, window: Tk, model: TextEditorModel) -> None:
@@ -24,8 +25,8 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
     self.paste_action_active = False
     self.paste_take_action_active = False
 
-
     setup_menu(self)
+    self.show_text()
 
   def _init_window(self, window: Tk):
     self.window = window
@@ -175,3 +176,13 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
 
   def _delete_selection(self):
     return self.model.delete_selection()
+
+
+  def _save_file(self):
+    save_file(self)
+
+  def _open_file(self):
+    open_file(self)
+
+  def _exit_file(self):
+    exit_file(self)

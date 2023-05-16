@@ -1,15 +1,15 @@
 FILE_MENU = [
   {
     "label": "Open",
-    "command": ""
+    "command": "open"
   },
   {
     "label": "Save",
-    "command": ""
+    "command": "save"
   },
   {
     "label": "Exit",
-    "command": ""
+    "command": "exit"
   }
 ]
 
