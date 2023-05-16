@@ -66,13 +66,15 @@ class TextEditorModel(Subject):
 
   # CURSOR METHODS
   def move_cursor_right(self, event=None, times=1):
-    self._move_cursor("x", "forwards", times=times)
+    if not self.cursor.normalized_location.x == len(self.lines[self.cursor.normalized_location.y]):
+      self._move_cursor("x", "forwards", times=times)
 
   def move_cursor_left(self, event=None, times=1):
     self._move_cursor("x", times=times)
 
   def move_cursor_down(self, event=None, times=1):
-    self._move_cursor("y", "forwards", times=times)
+    if not self.cursor.normalized_location.y == len(self.lines) - 1:
+      self._move_cursor("y", "forwards", times=times)
 
   def move_cursor_up(self, event=None, times=1):
     self._move_cursor("y", times=times)
@@ -90,6 +92,7 @@ class TextEditorModel(Subject):
     last_row_position = len(self.lines) - 1
 
     self._move_cursor_to(Location(position, last_row_position * Y_JUMP + Y_ORIGIN))
+
 
   # TEXT METHODS
   def insert(self, event, char=""):
