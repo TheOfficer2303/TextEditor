@@ -2,13 +2,14 @@ from typing import List
 
 from models.LocationRange import LocationRange
 from models.Location import Location
+from models.Cursor import Cursor
 
 from observers.Subject import Subject
 from observers.CursorObserver import CursorObserver
 from observers.TextObserver import TextObserver
 
-import consts.Cursor as Cursor
 from consts.Observer import ObserverType
+from consts.Cursor import X_ORIGIN, Y_ORIGIN, X_JUMP, Y_JUMP
 
 class TextEditorModel(Subject):
   def __init__(self, text: str):
@@ -18,7 +19,7 @@ class TextEditorModel(Subject):
     range_end = Location(0, 0)
     self.selection_range = LocationRange(range_start, range_end)
 
-    self.cursor_location = Location(Cursor.X_ORIGIN, Cursor.Y_ORIGIN)
+    self.cursor = Cursor(X_ORIGIN, Y_ORIGIN)
 
     self.cursor_observers: List[CursorObserver] = []
     self.text_observers: List[TextObserver] = []
@@ -39,28 +40,28 @@ class TextEditorModel(Subject):
 
 
   def _move_cursor_to(self, location: Location):
-    self.cursor_location = location
+    self.cursor.location = location
     self.notify(ObserverType.CURSOR)
 
 
   def _move_cursor_x(self, direction: str, times=1):
-    move = Cursor.X_JUMP * times
+    move = X_JUMP * times
 
     if direction == "forwards":
-        self.cursor_location.x += move
-    elif self.cursor_location.x - move > 0:
-      self.cursor_location.x -= move
+      self.cursor.increase_x(move)
+    elif self.cursor.location.x - move > 0:
+      self.cursor.decrease_x(move)
     else:
-      self.cursor_location.x = Cursor.X_ORIGIN
+      self.cursor.location.x = X_ORIGIN
 
   def _move_cursor_y(self, direction: str, times=1):
-    move = Cursor.Y_JUMP * times
+    move = Y_JUMP * times
     if direction == "forwards":
-      self.cursor_location.y += move
-    elif self.cursor_location.y - move > 0:
-      self.cursor_location.y -= move
+      self.cursor.increase_y(move)
+    elif self.cursor.location.y - move > 0:
+      self.cursor.decrease_y(move)
     else:
-      self.cursor_location.y = Cursor.Y_ORIGIN
+      self.cursor.location.y = Y_ORIGIN
 
 
   # CURSOR METHODS
@@ -77,10 +78,10 @@ class TextEditorModel(Subject):
     self._move_cursor("y", times=times)
 
   def move_cursor_to_origin_x(self):
-    self._move_cursor_to(Location(0, self.cursor_location.y))
+    self._move_cursor_to(Location(0, self.cursor.location.y))
 
   def move_cursor_to_origin_y(self):
-    self._move_cursor_to(Location(self.cursor_location.x, 0))
+    self._move_cursor_to(Location(self.cursor.location.x, 0))
 
 
   # TEXT METHODS
@@ -95,7 +96,7 @@ class TextEditorModel(Subject):
         return
 
     char_to_insert = char if len(char) > 0 else event.char
-    cursor_normalized = self._cursor_location_normalized()
+    cursor_normalized = self.cursor.normalized_location
 
     char_row = cursor_normalized.y
     char_position = cursor_normalized.x
@@ -113,7 +114,7 @@ class TextEditorModel(Subject):
 
 
   def break_lines(self):
-    cursor_normalized = self._cursor_location_normalized()
+    cursor_normalized = self.cursor.normalized_location
 
     char_row = cursor_normalized.y
     char_position = cursor_normalized.x
@@ -128,12 +129,12 @@ class TextEditorModel(Subject):
 
   # DELETE METHODS
   def delete_before(self, event=None):
-    cursor_normalized = self._cursor_location_normalized()
+    cursor_normalized = self.cursor.normalized_location
 
     char_row = cursor_normalized.y
     char_position = cursor_normalized.x
 
-    if self.cursor_location.x == Cursor.X_ORIGIN:
+    if self.cursor.location.x == X_ORIGIN:
       self.move_cursor_right(times=len(self.lines[char_row - 1]) + 1)
       self.move_cursor_up()
 
@@ -152,7 +153,7 @@ class TextEditorModel(Subject):
       self.delete_selection()
       return
 
-    cursor_normalized = self._cursor_location_normalized()
+    cursor_normalized = self.cursor.normalized_location
 
     char_row = cursor_normalized.y
     char_position = cursor_normalized.x
@@ -168,16 +169,23 @@ class TextEditorModel(Subject):
         continue
       self.lines[y] = self.lines[y][:self.selection_range.start.x] + self.lines[y][self.selection_range.end.x:]
 
-    self.move_cursor_left(times=self.selection_range.x_range())
+    cursor_normalized = self.cursor.normalized_location
+
+    move_steps = self.selection_range.x_range() if cursor_normalized.x == self.selection_range.end.x else 0
+    self.move_cursor_left(times=move_steps)
     self.unselect()
 
 
   def update_selection_range(self, event):
-    cursor_normalized = self._cursor_location_normalized()
+    cursor_normalized = self.cursor.normalized_location
 
     if event.keysym == 'Right':
       if self.selection_range.is_existing():
-        self.selection_range.end.x += 1
+        if cursor_normalized.x == self.selection_range.end.x:
+          self.selection_range.end.x += 1
+        elif cursor_normalized.x == self.selection_range.start.x:
+          self.selection_range.start.x += 1
+
       else:
         self.selection_range.start.x = cursor_normalized.x
         self.selection_range.start.y = cursor_normalized.y
@@ -189,7 +197,19 @@ class TextEditorModel(Subject):
 
     elif event.keysym == 'Left':
       if self.selection_range.is_existing():
-        self.selection_range.end.x -= 1
+        if cursor_normalized.x == self.selection_range.start.x:
+          self.selection_range.start.x -= 1
+        elif cursor_normalized.x == self.selection_range.end.x:
+          self.selection_range.end.x -= 1
+      else:
+        print("TU SAM")
+        self.selection_range.start.x = cursor_normalized.x - 1
+        self.selection_range.start.y = cursor_normalized.y
+
+        self.selection_range.end.x = self.selection_range.start.x + 1
+        self.selection_range.end.y = cursor_normalized.y
+        print("Cursor", cursor_normalized)
+        print("selection", self.selection_range)
       self.move_cursor_left()
 
     self.notify(ObserverType.TEXT)
@@ -215,10 +235,6 @@ class TextEditorModel(Subject):
     elif obs_type == ObserverType.TEXT:
       for o in self.text_observers:
         o.update_text()
-
-
-  def _cursor_location_normalized(self):
-    return Location(int(self.cursor_location.x / Cursor.X_JUMP), int(self.cursor_location.y / Cursor.Y_JUMP))
 
 
   def get_text_in_selection(self):

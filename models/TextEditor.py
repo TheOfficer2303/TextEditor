@@ -91,7 +91,7 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
     }
 
     cursor = Widget(self.window, "frame", options)
-    cursor.place(x=self.model.cursor_location.x, y=self.model.cursor_location.y)
+    cursor.place(x=self.model.cursor.location.x, y=self.model.cursor.location.y)
     cursor.lift()
 
     return cursor
@@ -120,7 +120,7 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
 
 
   def update_cursor_location(self):
-    self.cursor.place(x=self.model.cursor_location.x, y=self.model.cursor_location.y)
+    self.cursor.place(x=self.model.cursor.location.x, y=self.model.cursor.location.y)
     self.cursor.lift()
 
 
