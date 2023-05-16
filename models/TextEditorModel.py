@@ -78,11 +78,18 @@ class TextEditorModel(Subject):
     self._move_cursor("y", times=times)
 
   def move_cursor_to_origin_x(self):
-    self._move_cursor_to(Location(0, self.cursor.location.y))
+    self._move_cursor_to(Location(X_ORIGIN, self.cursor.location.y))
 
   def move_cursor_to_origin_y(self):
-    self._move_cursor_to(Location(self.cursor.location.x, 0))
+    self._move_cursor_to(Location(self.cursor.location.x, Y_ORIGIN))
 
+  def move_cursor_to_end(self):
+    last_row = self.lines[-1]
+    position = (len(last_row)) * X_JUMP
+
+    last_row_position = len(self.lines) - 1
+
+    self._move_cursor_to(Location(position, last_row_position * Y_JUMP + Y_ORIGIN))
 
   # TEXT METHODS
   def insert(self, event, char=""):

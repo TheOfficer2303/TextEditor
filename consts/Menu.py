@@ -35,3 +35,14 @@ EDIT_MENU = [
     "state": "paste_take"
   },
 ]
+
+MOVE_MENU = [
+  {
+    "label": "Cursor to document start",
+    "command": "move_to_start",
+  },
+  {
+    "label": "Cursor to document end",
+    "command": "move_to_end",
+  },
+]

@@ -177,6 +177,12 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
   def _delete_selection(self):
     return self.model.delete_selection()
 
+  def _move_to_start(self):
+    self.model.move_cursor_to_origin_x()
+    self.model.move_cursor_to_origin_y()
+
+  def _move_to_end(self):
+    self.model.move_cursor_to_end()
 
   def _save_file(self):
     save_file(self)
