@@ -29,8 +29,6 @@ def setup_edit_menu(self):
                                command=getattr(self, option["command"]),
                                state=state)
 
-  self.edit_menu.add_command(label="Delete Selection", command=self._delete_selection)
-
   self.menubar.add_cascade(label = "Edit", menu = self.edit_menu)
 
 def setup_move_menu(self):

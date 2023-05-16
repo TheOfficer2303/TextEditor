@@ -1,4 +1,5 @@
 from tkinter import Tk, Widget
+from consts.Stack import StackType
 from managers.UndoManager import UndoManager
 
 from models.StatusBar import StatusBar
@@ -12,24 +13,23 @@ from consts.Observer import ObserverType
 from observers.CursorObserver import CursorObserver
 from observers.TextObserver import TextObserver
 from observers.ClipboardObserver import ClipboardObserver
+from observers.UndoStackObservers.RedoStackObserver import RedoStackObserver
+from observers.UndoStackObservers.UndoStackObserver import UndoStackObserver
 
 from helpers.setupMenu import setup_menu
 from helpers.fileManager import save_file, open_file, exit_file
 
-class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
+class TextEditor(ClipboardObserver, CursorObserver, TextObserver, UndoStackObserver, RedoStackObserver):
   def __init__(self, window: Tk, model: TextEditorModel) -> None:
     self.clipboard = ClipboardStack("texts")
+    self.undo_manager = UndoManager()
+
     self._init_model(model)
     self._init_window(window)
     self._init_status_bar()
+    self._init_actions()
 
-    self.undo_manager = UndoManager()
     self.cursor = self._show_cursor()
-
-    self.cut_action_active = False
-    self.copy_action_active = False
-    self.paste_action_active = False
-    self.paste_take_action_active = False
 
     setup_menu(self)
     self.show_text()
@@ -73,11 +73,22 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
     model.attach(self, ObserverType.TEXT)
 
     self.clipboard.attach(self)
+    self.undo_manager.attach_redo(self)
+    self.undo_manager.attach_undo(self)
 
   def _init_status_bar(self):
     self.status_bar = StatusBar(self.window)
     self.model.attach(self.status_bar, ObserverType.CURSOR)
     self.model.attach(self.status_bar, ObserverType.TEXT)
+
+  def _init_actions(self):
+    self.cut_action_active = False
+    self.copy_action_active = False
+    self.paste_action_active = False
+    self.paste_take_action_active = False
+    self.undo_action_active = False
+    self.redo_action_active = False
+    self.delete_selection_action_active = False
 
   def show_text(self):
     text_opts = {
@@ -151,9 +162,9 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
     self.text.configure(state='normal')
     self._update_all_lines()
 
-    self.copy_action_active, self.cut_action_active = False, False
+    self.copy_action_active, self.cut_action_active, self.delete_selection_action_active = False, False, False
     if self.model.selection_range.is_existing():
-      self.copy_action_active, self.cut_action_active = True, True
+      self.copy_action_active, self.cut_action_active, self.delete_selection_action_active = True, True, True
 
       start = self._create_tag_start_location()
       end = self._create_tag_end_location()
@@ -170,6 +181,22 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver):
       self.paste_action_active, self.paste_take_action_active = False, False
     else:
       self.paste_action_active, self.paste_take_action_active = True, True
+
+    setup_menu(self)
+
+  def stack_empty(self, stack_type: StackType):
+    if stack_type == StackType.UNDO:
+      self.undo_action_active = False
+    else:
+      self.redo_action_active = False
+
+    setup_menu(self)
+
+  def stack_not_empty(self, stack_type: StackType):
+    if stack_type == StackType.UNDO:
+      self.undo_action_active = True
+    else:
+      self.redo_action_active = True
 
     setup_menu(self)
 

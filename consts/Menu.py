@@ -15,6 +15,16 @@ FILE_MENU = [
 
 EDIT_MENU = [
   {
+    "label": "Undo",
+    "command": "_undo",
+    "state": "undo"
+  },
+  {
+    "label": "Redo",
+    "command": "_redo",
+    "state": "redo"
+  },
+  {
     "label": "Cut",
     "command": "_cut_to_clipboard",
     "state": "cut"
@@ -33,6 +43,11 @@ EDIT_MENU = [
     "label": "Paste and Take",
     "command": "_paste_and_remove_from_clipboard",
     "state": "paste_take"
+  },
+  {
+    "label": "Delete Selection",
+    "command": "_delete_selection",
+    "state": "delete_selection"
   },
 ]
 
