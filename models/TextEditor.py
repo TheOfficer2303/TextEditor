@@ -1,5 +1,8 @@
 from tkinter import Tk, Widget
-from consts.Stack import StackType
+
+from iterators.AllLines import AllLinesIterator
+from iterators.RangeLines import RangeIterator
+
 from managers.UndoManager import UndoManager
 
 from models.StatusBar import StatusBar
@@ -8,6 +11,7 @@ from models.ClipboardStack import ClipboardStack
 from models.Cursor import Cursor as CursorModel
 
 import consts.Cursor as Cursor
+from consts.Stack import StackType
 from consts.Observer import ObserverType
 
 from observers.CursorObserver import CursorObserver
@@ -107,8 +111,9 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver, UndoStackObser
 
 
   def _show_all_lines(self, text_widget: Widget):
-    for index, line in enumerate(self.model.lines):
-      text_widget.tk.call(text_widget._w, 'insert', f"{index + 1}.0", line + '\n')
+    all_lines_iter = AllLinesIterator(self.model.lines)
+    for line in all_lines_iter:
+      text_widget.tk.call(text_widget._w, 'insert', f"{all_lines_iter.current + 1}.0", line + '\n')
 
 
   def _show_cursor(self):
@@ -201,12 +206,13 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver, UndoStackObser
     setup_menu(self)
 
   def _update_all_lines(self):
-    for index, line in enumerate(self.model.lines):
+    all_lines_iter = AllLinesIterator(self.model.lines)
+    for line in all_lines_iter:
       if self.text.tk.call(self.text._w, 'count', '-lines', '1.0', 'end') < len(self.model.lines):
-        self.text.tk.call(self.text._w, 'insert', f"{index + 1}.0", line + '\n')
+        self.text.tk.call(self.text._w, 'insert', f"{all_lines_iter.current }.0", line + '\n')
         print(self.text.tk.call(self.text._w, 'count', '-lines', '1.0', 'end'))
       else:
-        self.text.tk.call(self.text._w, 'replace', f"{index + 1}.0", f"{index + 1}.end",  line)
+        self.text.tk.call(self.text._w, 'replace', f"{all_lines_iter.current }.0", f"{all_lines_iter.current }.end",  line)
 
 
   def _create_tag_start_location(self):
