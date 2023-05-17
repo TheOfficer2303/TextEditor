@@ -24,7 +24,9 @@ def setup_edit_menu(self):
   self.edit_menu = Menu(self.menubar, tearoff=0)
 
   for option in EDIT_MENU:
-    state = "normal" if getattr(self, f"{option['state']}_action_active") else "disabled"
+    state = "normal"
+    if "state" in option:
+      state = "normal" if getattr(self, f"{option['state']}_action_active") else "disabled"
     self.edit_menu.add_command(label=option["label"],
                                command=getattr(self, option["command"]),
                                state=state)

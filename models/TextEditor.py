@@ -207,13 +207,21 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver, UndoStackObser
 
   def _update_all_lines(self):
     all_lines_iter = AllLinesIterator(self.model.lines)
+    count = self.text.tk.call(self.text._w, 'count', '-lines', '1.0', 'end')
     for line in all_lines_iter:
-      if self.text.tk.call(self.text._w, 'count', '-lines', '1.0', 'end') < len(self.model.lines):
-        self.text.tk.call(self.text._w, 'insert', f"{all_lines_iter.current }.0", line + '\n')
-        print(self.text.tk.call(self.text._w, 'count', '-lines', '1.0', 'end'))
+      if count < len(self.model.lines):
+        self.text.tk.call(self.text._w, 'insert', f"{all_lines_iter.current}.0", line + '\n')
+        print(count)
       else:
-        self.text.tk.call(self.text._w, 'replace', f"{all_lines_iter.current }.0", f"{all_lines_iter.current }.end",  line)
+        self.text.tk.call(self.text._w, 'replace', f"{all_lines_iter.current}.0", f"{all_lines_iter.current}.end", line)
 
+    length = len(self.model.lines)
+    if count > length:
+      for i in range(count):
+        line = self.text.tk.call((self.text._w, 'get', f'{i}.0', f'{i}.end'))
+        if line == "":
+          print("brisem", line, i)
+          self.text.tk.call((self.text._w, 'delete', f'{i}.0', f'{i}.end'))
 
   def _create_tag_start_location(self):
     row = self.model.selection_range.start.y + 1
@@ -231,6 +239,9 @@ class TextEditor(ClipboardObserver, CursorObserver, TextObserver, UndoStackObser
 
   def _delete_selection(self):
     return self.model.delete_selection()
+
+  def _delete_all(self):
+    return self.model.delete_all()
 
   def _move_to_start(self):
     self.model.move_cursor_to_origin_x()

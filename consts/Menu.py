@@ -49,6 +49,10 @@ EDIT_MENU = [
     "command": "_delete_selection",
     "state": "delete_selection"
   },
+  {
+    "label": "Clear Document",
+    "command": "_delete_all",
+  },
 ]
 
 MOVE_MENU = [

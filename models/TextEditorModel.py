@@ -1,4 +1,5 @@
 from typing import List
+from command.delete.DeleteAll import DeleteAllAction
 
 from command.delete.DeleteBefore import DeleteBeforeAction
 from command.delete.DeleteAfter import DeleteAfterAction
@@ -149,9 +150,14 @@ class TextEditorModel(Subject):
       self.undo_manager.push(action)
 
 
-
   def delete_selection(self):
     action = DeleteSelectionAction(self)
+    action.execute_do()
+    self.undo_manager.push(action)
+
+
+  def delete_all(self):
+    action = DeleteAllAction(self)
     action.execute_do()
     self.undo_manager.push(action)
 
